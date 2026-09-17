@@ -1,5 +1,19 @@
 # 更新记录
 
+## bot-0.0.3 — 2026-09-17
+
+### 新增：GsCore 游戏与娱乐插件（26 个）
+
+- 新增第 9 节总览与 9.1–9.5 分节，收录 26 个 gsuid_core 体系插件，全部基于本地源码分析。
+- 前缀速查表：明确游戏命令使用游戏前缀（`gs`/`sr`/`ww`/`zzz`/`bbb`/`nte`/`end`/`pgr`/`dna`/`ss`/`ba`/`rc`/`vr`/`day`），无前缀插件（JRYS、TodayWaifu、ChisaEating、gs_kuro_cos、MomoTune）单独标注；与 BOT 功能的“菲比”前缀严格区分。
+- 通用命令模式（帮助/绑定/查询/每日/签到/面板/刷新）与 pm 权限分级说明。
+- 依赖关系：PGRUID、RoverSign、RoverReminder 硬依赖 XutheringWavesUID；EndUID 等可用 RemoteRender 外置渲染；ScoreEcho、WavesGachaSim 软依赖主插件。
+- 已知坑与未实现功能：BBBUID 扫码登陆未注册、WavesGachaSim 抽卡统计未注册、EndUID 绑定未实现、MomoTune 酷狗源禁用、ZZZeroUID 抽卡无 URL 导入、DeltaUID 扫码使旧 token 失效等。
+- 隐私/安全注意：DailyAnalyisis 归档群消息、WzryUID 小号 CK 建议、gs_kuro_cos 搬运风控、RemoteRender 无鉴权仅限内网。
+- 新增游戏类与 BOT 类“快速判断”回复（9.5 与 9.9 节）、FAQ Q11–Q14（前缀混用、鸣潮双前缀、战双登录依赖、绑定方式差异）。
+- 来源与版本表新增 26 行固定提交链接；勘误：StarRailUID 实际仓库为 baiqwerdvd/StarRailUID（原链接 qwerdvd 不存在）、MomoTune 实际为 MimoKit/MomoTune（原链接 Xinzhus 不存在）。
+- 鸣潮前缀口径：本批插件源码为 `ww`，GS 知识库为 `fb`，知识库不强行统一，以部署实测为准。
+
 ## bot-0.0.2 — 2026-09-17
 
 ### 复审修订

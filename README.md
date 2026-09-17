@@ -4,9 +4,9 @@
 
 > 仓库：`fzm-fb-zsk-bot`。参考 [菲比 GS 知识库](https://github.com/MeowAndy/Fzm-fb-zsk-gs) 的组织方式。
 
-> 当前版本：`bot-0.0.2`。整理日期：2026-09-17。
+> 当前版本：`bot-0.0.3`。整理日期：2026-09-17。
 
-> 范围：插件帮助、Minecraft 皮肤、菲比表情包、QQ 群管、机器人资料、好友与群关系、群成员 Excel 导出。
+> 范围：插件帮助、Minecraft 皮肤、菲比表情包、QQ 群管、机器人资料、好友与群关系、群成员 Excel 导出，以及 26 个游戏与娱乐插件（GsCore 体系，见第 9 节）。
 
 **这是一份 Markdown 知识库，不是 AstrBot 插件、Skill、MCP 服务或命令执行器。**
 
@@ -34,12 +34,13 @@
 - “引用”是 QQ 的回复/引用功能，不是把对方消息重新复制一遍。
 - 自然语言“菲比，帮我查皮肤”是向 Agent 提问，**不等于插件注册了这个命令**。
 - AstrBot 后台需要已经配置“菲比”唤醒前缀。本文不会替你修改配置；没有反应时先核对前缀和插件加载情况。
+- **游戏插件例外**：第 9 节起的 GsCore 游戏插件使用各自的游戏前缀（`gs`、`sr`、`ww` 等），**不使用“菲比”**；不要给游戏命令加“菲比”，也不要给 BOT 命令加游戏前缀。
 
 > 前缀与命令之间不额外插入空格，尤其是 `mcskin`：其源码按消息空白分词后取第 2 项作用户名。不同 AstrBot 版本如何传递处理后的消息还需实测，不能随意改动格式。
 
 ### 和 GS 游戏知识库有什么区别？
 
-本库介绍 AstrBot 机器人功能。原神、鸣潮等游戏查询继续参考 GS 知识库；本库的“菲比”规则不替换 GS 库中 `gs`、`fb`、`yh` 等游戏前缀。
+两份知识库互补：GS 知识库是游戏功能的**新手上手流程**（帮助 → 绑定 → 查询 → 刷新）；本库第 9 节起收录这些游戏插件的**插件级命令细节**（来源仓库、依赖关系、权限分级和已知坑）。游戏命令使用游戏前缀，本库的“菲比”规则不替换 `gs`、`sr`、`yh` 等游戏前缀。鸣潮前缀在两库中表述不一致（`fb` 与 `ww`），处理口径见第 9 节。
 
 ---
 
@@ -58,6 +59,11 @@
 | 查看机器人加入的群 | `菲比群列表` | AstrBot 管理员；关系管理插件 |
 | 导出本群成员 Excel | `菲比导出群数据` | 请求者需属于目标群 |
 | 导出所有群成员 Excel | `菲比导出所有群数据` | AstrBot 管理员；跨群隐私操作 |
+| 查原神/星铁/绝区零等游戏数据 | `gs帮助` / `sr帮助` / `zzz帮助` 等 | 游戏前缀，不用“菲比”；见第 9 节 |
+| 鸣潮签到/体力推送/声骸分析 | `ww签到` / `ww开启体力推送` / `ww评分` | 鸣潮前缀 `ww`；见 9.3 节 |
+| 今日运势/今日老婆/点歌 | `今日运势` / `今日老婆` / `点歌 歌名` | 无前缀，直接发送 |
+| 解析视频链接 | 直接发送链接 | 自动触发，无需命令 |
+| 群聊日报 | `day群分析` | 群聊；需 LLM 配置 |
 
 **不要混淆：**
 
@@ -617,7 +623,483 @@
 
 ---
 
-## 9) 快速判断：用户只说一句话时怎么回
+## 9) GsCore 游戏与娱乐插件总览：先认前缀，再找命令
+
+> 本节起收录的 26 个插件**全部是 gsuid_core（早柚核心/GsCore）体系插件**，不是 AstrBot 原生插件。它们运行在 GsCore 框架下，经适配器与消息平台对接。本知识库只整理使用方法；安装部署（GsCore、适配器、渲染服务）不在本文范围。
+
+### A. 三条铁律
+
+1. **游戏命令用游戏前缀，不用“菲比”**。例如 `gs帮助`、`sr查询`、`ww签到`。给游戏命令加“菲比”或给 BOT 命令加游戏前缀都会失败。
+2. **前缀紧贴命令**：`gs帮助` 不是 `gs 帮助`。参数才用空格分隔，如 `ba算分 ex寿司剩1:23.433 56.789`。
+3. **先发 `<前缀>帮助`**：每个插件都有帮助命令，不确定时先看帮助，不要猜命令。
+
+### B. 前缀速查表
+
+| 插件 | 游戏 | 前缀 | 说明 |
+|---|---|---|---|
+| GenshinUID | 原神 | `gs` | 别名 `gsuid` |
+| StarRailUID | 星穹铁道 | `sr` | |
+| XutheringWavesUID | 鸣潮 | `ww` | 见下方“鸣潮前缀说明” |
+| ZZZeroUID | 绝区零 | `zzz` | 多前缀：`zzz`/`绝区零`/`ZZZ` |
+| BBBUID | 崩坏3 | `bbb` | 多前缀：`bbb`/`崩坏3`/`BBB` |
+| NTEUID | 异环 | `nte` | 多前缀：`nte`/`NTE`/`yh`/`YH`，与 GS 库的 `yh` 口径一致 |
+| EndUID | 终末地 | `end` | 别名 `zmd` |
+| PGRUID | 战双帕弥什 | `pgr` | 别名 `zs`；登录依赖鸣潮插件 |
+| DNAUID | 二重螺旋 | `dna` | 多前缀：`dna`/`DNA`/`jjj`/`JJJ` |
+| DeltaUID | 三角洲 | `ss` | 别名 `鼠鼠` |
+| WzryUID | 王者荣耀 | 无独立前缀 | 命令自带“王者”字样 |
+| BlueArchiveUID | 蔚蓝档案 | `ba` | 多前缀：`ba`/`BA` |
+| RocomUID | 洛克王国 | `rc` | |
+| VideoResolver | 视频解析 | `vr` | 链接自动触发，无需前缀 |
+| DailyAnalyisis | 群日常分析 | `day` | 别名 `群日常分析`/`群分析总结` |
+| MomoTune | 点歌 | 无前缀 | 直接发 `点歌 歌名` |
+| JRYS | 今日运势 | 无前缀 | 直接发 `今日运势` |
+| TodayWaifu | 今日老婆 | 无前缀 | 直接发 `今日老婆` |
+| ChisaEating | 千小妹干饭 | 无前缀 | 关键词触发，如 `吃什么` |
+| gs_kuro_cos | COS/同人图 | 无前缀 | 直接发 `wwcos` 等 |
+| WavesGachaSim | 鸣潮模拟抽卡 | `ww` | |
+| ScoreEcho | 鸣潮声骸分析 | `ww` | |
+| RoverSign | 鸣潮签到 | `ww` | |
+| RoverReminder | 鸣潮体力推送 | `ww` | |
+| WWBetaDiff | 鸣潮体验服对比 | `ww` | 命令 `wwng` |
+| RemoteRender | 渲染服务 | 无命令 | 独立 Node.js 服务，非聊天插件 |
+
+**鸣潮前缀说明**：本批鸣潮插件（XutheringWavesUID 及其周边）源码前缀均为 `ww`；GS 知识库中鸣潮写作 `fb`。两者可能对应不同部署或不同时期的插件。实际使用以当前部署 `<前缀>帮助` 是否响应为准，不要在两套前缀之间来回猜。
+
+### C. 通用命令模式
+
+多数游戏 UID 插件共享同一套命令骨架，记住这个模式就能举一反三：
+
+```text
+<前缀>帮助          查看全部命令
+<前缀>绑定<uid>     绑定游戏账号
+<前缀>查询          账号概览
+<前缀>每日 / mr     日常资源（树脂/开拓力/体力等）
+<前缀>签到          手动签到
+<前缀><角色名>面板   角色面板（部分插件需先刷新）
+<前缀>刷新面板      同步最新数据
+```
+
+### D. 权限分级（pm 体系）
+
+GsCore 使用 pm 数值分级：`0` 超级管理员、`1` Bot 主人/管理、`2` 群管理员、`3` 普通用户。多数查询、签到、面板命令对普通用户开放；`下载全部资源`、`更新记录`、`全部签到`、面板图管理等通常需要 pm=1 及以上。权限不足时插件会提示，不要尝试绕过。
+
+---
+
+## 9.1) 米哈游系游戏插件
+
+### GenshinUID（原神，前缀 `gs`）
+
+```text
+gs帮助
+gs绑定uid / gs切换uid / gs删除uid
+gs查询 / gs角色列表 / gs练度统计
+gs每日 / gs便笺 / gs札记
+gs签到 / gs兑换码
+gs抽卡记录 / gs刷新抽卡记录 / gs导出抽卡记录
+gs查询<角色名> / gs刷新面板 / gs强制刷新
+gs深渊 / gs新深渊 / gs幽境危战
+gs七圣召唤 / gs个人日历 / gs每日材料
+gs版本规划 / gs未复刻 / gs卡池列表
+gs哪里有 <材料名>          # 地图查询
+<角色名>用什么 / <角色名>怎么养   # AI 文字攻略
+```
+
+- 首次部署需管理员执行 `gs下载全部资源`。
+- 面板依赖角色展柜公开；抽卡刷新需要 CK（Cookie）。
+- 导入抽卡记录（发 JSON 文件）和导出抽卡链接仅私聊可用。
+
+### StarRailUID（星穹铁道，前缀 `sr`）
+
+```text
+sr帮助
+sr绑定uid / sr切换uid / sr删除uid
+sr查询 / sr练度统计 / sr角色列表
+sr每日 / sr开拓月历
+sr签到 / sr兑换码
+sr抽卡记录 / sr刷新抽卡记录
+sr查询<角色名> / sr刷新面板
+sr深渊 / sr虚构叙事 / sr末日幻影 / sr异相仲裁
+sr模拟宇宙 / sr寰宇蝗灾 / sr差分宇宙
+sr角色攻略 / sr光锥攻略 / sr遗器
+```
+
+- 导入抽卡链接仅私聊。
+- 面板数据源 auto 模式：米游社失败自动回退 mihomo。
+
+### ZZZeroUID（绝区零，前缀 `zzz`）
+
+```text
+zzz帮助
+zzz绑定uid / zzz切换uid / zzz删除uid
+zzz查询 / zzz练度统计
+zzz每日 / zzz绳网月报
+zzz签到 / zzz兑换码
+zzz抽卡记录 / zzz刷新抽卡记录
+zzz深渊 / zzz零号空洞 / zzz危局强袭战 / zzz临界推演
+zzz角色面板<名> / zzz刷新面板
+```
+
+- 抽卡记录无 URL 导入，仅靠 CK 获取。
+- 面板依赖 enka/microgg 第三方服务。
+
+### BBBUID（崩坏3，前缀 `bbb`）
+
+```text
+bbb帮助
+bbb绑定uid / bbb切换uid / bbb删除uid
+bbb查询 / bbb便笺 / bbb刷新面板
+bbb深渊 / bbb战场 / bbb往世乐土 / bbb手账
+bbb抽卡记录 / bbb刷新抽卡记录
+bbb签到
+bbb角色图鉴 / bbb武器图鉴 / bbb圣痕图鉴
+bbb乐土攻略<关键词>
+```
+
+- 抽卡需要 stoken；README 提到的“bbb扫码登陆”在源码中未注册，以帮助命令实际返回为准。
+
+---
+
+## 9.2) 库洛及其他游戏插件
+
+### XutheringWavesUID（鸣潮主查询，前缀 `ww`）
+
+```text
+ww帮助
+ww绑定<uid> / ww切换<uid> / ww查看 / ww删除<uid>
+ww登录 / ww邮箱登录 / ww添加token
+ww刷新<角色名>面板 / ww<角色名>面板 / ww<角色名>攻略
+ww卡片 / ww每日 / ww探索度 / ww签到日历
+wwst（深塔）/ wwqx（全息）/ wwhx（冥海）/ wwjz（矩阵）
+ww抽卡记录 / ww更新抽卡记录
+ww公告 / ww订阅公告
+ww下载全部资源（管理）
+```
+
+- 鸣潮生态核心插件：RoverSign、RoverReminder 硬依赖它的数据库。
+- 总排行/持有率等伤害计算功能需要向作者申请 token。
+- 面板图提取用 `ww提取` 配合截图。
+
+### PGRUID（战双帕弥什，前缀 `pgr`）
+
+```text
+pgr帮助
+pgr登录              # 仅引导，实际登录在鸣潮插件完成
+pgr绑定<uid> / pgr切换 / pgr查看
+pgr卡片 / pgr每日 / pgr刷新面板
+pgr纷争战区 / pgr幻痛囚笼 / pgr诺曼复兴战
+pgr涂装 / pgr资源
+```
+
+- **登录依赖 XutheringWavesUID**：库洛账号通用，先在鸣潮插件完成 `ww登录`，战双自动可用。不装鸣潮插件则无法登录。
+
+### NTEUID（异环，前缀 `nte`，兼容 `yh`）
+
+```text
+nte帮助 / yh帮助
+nte登录 / nte刷新令牌 / nte退出登录
+nte切换<uid> / nte查看
+nte查询 / nte面板 / nte刷新面板
+nte每日 / nte探索 / nte房产 / nte载具
+nte签到 / nte开启自动签到 / nte签到日历
+nte抽卡记录 / nte兑换码 / nte公告
+```
+
+- GS 知识库教 `yh` 前缀，本插件同时注册 `nte`/`yh`，两者等价。
+- 登录需要 Core 的 Web 服务可访问（浏览器打开登录链接）。
+
+### EndUID（终末地，前缀 `end`）
+
+```text
+end帮助
+end扫码登录 / end绑定 cred / end删除 / end切换
+end刷新 / end卡片 / end每日 / end探索 / end基建
+end危机合约 / end战争回响 / end影拓丰碑
+end抽卡记录 / end导入抽卡记录
+end兑换码 / end公告
+```
+
+- HTML 渲染需要本地浏览器或配置 RemoteRender 外置渲染服务。
+- `end绑定` 实际回复“暂不支持绑定”，登录走扫码。
+
+### DNAUID（二重螺旋，前缀 `dna`）
+
+```text
+dna帮助
+dna登录 / dna退出登录 / dna绑定<uid>
+dna查询 / dna每日 / dna签到 / dna签到日历
+dna周报 / dna密函 / dna兑换码 / dna公告
+dna角色列表 / dna武器列表
+dna下载全部资源（管理）
+```
+
+- 登录分短信验证码和 Web 两种；Web 登录的凭据不支持签到、体力和周报，需要短信登录。
+
+### DeltaUID（三角洲，前缀 `ss`）
+
+```text
+ss帮助
+ss登录 / ss绑定 / ss切换 / ss删除
+ss信息 / ss日报 / ss周报 / ss战绩 / ss特勤处
+ss藏馆 / ss价格<物品名>
+ss订阅 / ss取消订阅
+ss密码                # 三角洲今日密码
+```
+
+- 登录发二维码，手机 QQ/微信扫码。
+- 扫码登录会使旧 token 失效；跨机器人迁移用 `ss导出`（仅私聊）+ `ss添加`。
+
+### WzryUID（王者荣耀，无独立前缀）
+
+```text
+王者帮助
+王者绑定<uid> / 王者切换<uid> / 王者删除<uid>
+王者添加CK（私聊）/ 王者删除CK（超管）
+当前段位 / 查荣耀 / 皮肤墙
+王者英雄梯度榜 / 王者英雄热度榜
+```
+
+- 命令自带“王者”字样，无独立前缀。
+- 查询需要王者营地 CK，README 明确警告 CK 风险，强烈建议使用小号。
+
+### BlueArchiveUID（蔚蓝档案，前缀 `ba`）
+
+```text
+ba帮助
+ba绑定<好友码>:1     # :1 官服  :2 b服
+ba查询
+ba总力战 / ba档线 / ba总力战档位
+ba算分 <刀1> <刀2>   # 如 ba算分 ex寿司剩1:23.433 56.789
+ba用时 <目标>
+ba学生排行 / ba攻略<关卡> / ba角色攻略<学生名>
+ba节奏榜
+```
+
+- 什亭之匣数据需要申请 Token 填入配置（见插件 README 群号）。
+- 赛季数据可能过期，以实际返回为准。
+
+### RocomUID（洛克王国，前缀 `rc`）
+
+```text
+rc帮助
+rcQQ登录 / rcWX登录   # 扫码绑定
+rc绑定token <token>
+rc档案 / rc精灵蛋 / rc配种 / rc图鉴<名> / rc查找精灵
+rc家园 / rc菜园 / rc远行商人
+rc开启推送 / rc关闭推送
+rc下载全部资源（管理）
+```
+
+- 档案查询依赖第三方 wegame 代理（需配置 `RC_wegame_key`）。
+- 远行商人每小时定点推送（需订阅）。
+
+---
+
+## 9.3) 鸣潮周边插件（前缀均为 `ww`）
+
+### RoverSign（鸣潮签到）
+
+```text
+ww签到 / ww社区签到 / ww库街区签到
+ww全部签到（管理）
+ww开启自动签到 / ww关闭自动签到
+ww订阅签到结果 / ww取消订阅签到结果
+```
+
+- 硬依赖 XutheringWavesUID：先在主插件完成 token 登录。
+- 支持战双账号签到（`ww开启战双自动签到`）。
+
+### RoverReminder（鸣潮体力推送）
+
+```text
+ww开启体力推送 / ww关闭体力推送
+ww推送邮箱 <邮箱>
+ww推送阈值 <数值>    # 有效范围 120–240
+```
+
+- 必须配置邮箱才能推送；QQ 邮箱需要授权码（管理员在配置文件填写）。
+- 纯数字 QQ 号开启时会自动猜 `<QQ号>@qq.com`，可能进垃圾箱。
+
+### ScoreEcho（鸣潮声骸分析）
+
+```text
+ww评分 <角色名> [4c/3c/1c]     # 配合声骸截图
+ww分析 <角色名>面板 / ww分析练度
+ww分析帮助
+```
+
+- 评分走作者 OCR 服务，需控制台配置 token。
+- 未写角色名时默认当前 UP 角色。
+- 可独立运行；桥接鸣潮主插件后支持国际服登录同步。
+
+### WavesGachaSim（鸣潮模拟抽卡）
+
+```text
+ww抽卡 / ww抽卡武器 / ww抽卡常驻
+ww抽卡百连（默认关闭）
+ww切换卡池 <编号> / ww更新卡池
+ww模拟绑定<特征码> / ww模拟抽卡记录
+```
+
+- 每日上限默认 300 次；百连默认关闭（渲染压力大）。
+- 模拟数据独立于真实抽卡记录。
+
+### WWBetaDiff（鸣潮体验服对比）
+
+```text
+wwng                # 体验服三快照变动总览
+wwng <角色名或ID>    # 按名称或 ID 查两阶段详情
+```
+
+- 数据源需要最近 3 个快照，不足时直接报错。
+
+---
+
+## 9.4) 娱乐与工具插件
+
+### JRYS（今日运势，无前缀）
+
+```text
+今日运势 / jrys
+悔签                 # 重新抽取，每日限 1 次
+逆天改命 / 改命       # 每日限 2 次，可能失败
+随机背景
+```
+
+- 同一天同一用户结果固定（按用户+日期哈希）。
+- 完全离线运行，无外部依赖。
+
+### TodayWaifu（今日老婆，无前缀）
+
+```text
+今日老婆 / jrlp [角色名]
+娶群友 / 老婆列表
+抢老婆 @某人 / 送老婆 @某人
+离婚
+今日老婆帮助
+```
+
+- 老公/萝莉/异环/战双变体默认关闭，需控制台开启。
+- 自定义老婆、上传图片、分配老婆需要管理员权限和白名单。
+
+### ChisaEating（千小妹还在吃，无前缀）
+
+```text
+吃什么 / 吃啥          # 随机推荐
+喝什么 / 喝啥
+来点黑暗料理
+鸣潮特产 / 原神特饮     # 按世界推荐
+想和<角色名>吃饭        # 厨师联动
+千小妹速查 / 干饭帮助
+```
+
+- 关键词包含即触发，无需任何前缀。
+- 管理员可加菜、上传厨师、更新图库（DLC 从 GitHub Releases 下载）。
+- WebUI 默认密码为空，部署后必须设置。
+
+### gs_kuro_cos（COS/同人图，无前缀）
+
+```text
+wwcos [关键词]        # 鸣潮 COS
+ww同人 [关键词]
+zs同人 [关键词]       # 战双
+yscos / ys同人 [关键词]   # 原神
+ww帮助
+```
+
+- 图片来自库街区和米游社社区；搬运有风控风险（README 明示自担）。
+- 自动跳过标注“禁止搬运”的帖子。
+
+### MomoTune（点歌，无前缀）
+
+```text
+点歌 <歌名>           # 双源搜索（网易云+QQ音乐）
+唱歌 / 来一首          # 别名
+<纯数字>              # 从候选中选歌（5 分钟内有效）
+QQ音乐登录（管理）/ QQ音乐状态
+```
+
+- 双源各搜 5 条合并 10 选 1，回复数字播放语音。
+- 需要自建网易云 API（默认 `http://127.0.0.1:3030`）；QQ音乐源需可选依赖包。
+- 酷狗音源已禁用，不要教用户使用。
+
+### VideoResolver（视频解析，前缀 `vr`）
+
+```text
+（直接发送 B站/抖音/TikTok/微博/小红书/X/YouTube 等链接，自动解析）
+（发送 12 位 BV 号也自动触发）
+vr帮助
+vr开启解析 / vr关闭解析（群管理）
+vr开启评论 / vr关闭评论（群管理）
+```
+
+- 链接自动触发，无需任何前缀。
+- YouTube/TikTok 需要 yt-dlp；抖音需要 Node.js 运行时。
+- 视频 超 100MB 回退发文件；时长上限默认 480 秒。
+
+### DailyAnalyisis（群日常分析，前缀 `day`）
+
+```text
+day群分析 [天数]      # 生成群聊日报
+day群漫画 [天数]      # AI 群漫画
+day概览 / day帮助
+day分析设置（群管理）
+```
+
+- 仅群聊可用；需要配置 GsCore 的 LLM Provider。
+- 群漫画需要图片生成 API。
+- 后台静默归档所有群消息（可配置关闭）——部署前注意隐私告知。
+
+### RemoteRender（远程渲染服务，无命令）
+
+```text
+GET  /health          # 存活检查
+POST /render          # HTML 转图片
+```
+
+- 独立 Node.js 服务（Express + Puppeteer），不是聊天插件。
+- 供 EndUID、XutheringWavesUID 等插件的“外置渲染”配置调用。
+- 无鉴权，只能部署在内网；启动脚本仅支持 Linux。
+
+---
+
+## 9.5) 快速判断：用户只说一句话时怎么回（游戏类）
+
+### “查一下面板”
+
+「哪个游戏？原神 `gs查询<角色名>`、星铁 `sr查询<角色名>`、鸣潮 `ww<角色名>面板`、绝区零 `zzz角色面板<名>`。查不到就先发对应的 `<前缀>刷新面板`。」
+
+### “签到”
+
+「哪个游戏？直接发 `<前缀>签到`，例如 `gs签到`、`sr签到`、`ww签到`。想每天自动签，用 `<前缀>开启自动签到`。」
+
+### “抽卡记录”
+
+「哪个游戏？发 `<前缀>抽卡记录`。数据不全时先 `<前缀>刷新抽卡记录`；原神/星铁的导入链接功能仅私聊可用。」
+
+### “深渊/挑战”
+
+「按游戏选择：原神 `gs深渊`、星铁 `sr深渊`（另有虚构/末日/模拟宇宙）、绝区零 `zzz深渊`、崩坏3 `bbb深渊`、鸣潮 `wwst`。」
+
+### “来点好运”
+
+「直接发 `今日运势`；想重来一次，每天有一次 `悔签` 和两次 `逆天改命` 机会。」
+
+### “点首歌”
+
+「直接发 `点歌 歌名`，会同时搜索网易云和 QQ音乐，回复数字选歌。」
+
+### “解析这个视频”
+
+「直接把链接发出来就行，B站/抖音/微博/小红书等链接会自动解析，不需要任何前缀。YouTube 需要 yt-dlp 支持。」
+
+### “群聊日报”
+
+「在群里发 `day群分析` 可以生成聊天日报；需要管理员先配置好 LLM 服务。」
+
+---
+
+## 9.9) 快速判断：用户只说一句话时怎么回（BOT 功能类）
 
 ### “你会什么？” / “怎么用机器人？”
 
@@ -708,6 +1190,22 @@
 ### Q10：为什么不能直接发人格 Prompt 或所有群成员表？
 
 这些可能包含内部设定或其他人的信息。只把必要内容发给获准的接收者；管理员在公开群执行也可能造成不必要披露。
+
+### Q11：游戏命令加了“菲比”没反应？
+
+「游戏插件用游戏前缀，不用“菲比”。例如原神是 `gs帮助`、鸣潮是 `ww帮助`。两套前缀不要混用。」
+
+### Q12：鸣潮到底用 `fb` 还是 `ww`？
+
+「两套口径都存在：GS 知识库写 `fb`，本批鸣潮插件源码注册的是 `ww`。在当前部署里先分别试 `ww帮助` 和 `fb帮助`，哪个响应用哪个。」
+
+### Q13：战双怎么登录不了？
+
+「PGRUID 的登录依赖鸣潮插件：先发 `ww登录` 完成库洛账号登录，战双会自动共用该账号。单独发 `pgr登录` 只会收到引导提示。」
+
+### Q14：游戏查询提示未绑定？
+
+「每个游戏先绑定一次：`<前缀>绑定<uid>`，例如 `gs绑定100234567`。部分游戏（BA、王者、三角洲）绑定方式不同，先看 `<前缀>帮助` 或 `王者帮助`。」
 
 ---
 
@@ -820,6 +1318,39 @@ llm_view_group_file
 | [群成员导出](https://github.com/Futureppo/astrbot_plugin_group_information/tree/8cc3f1eda5d6723b61f91ddb3041f8c6949101e6) | `8cc3f1e` | 权限、成员资格、Excel 生成与上传 |
 | [GS 知识库参考](https://github.com/MeowAndy/Fzm-fb-zsk-gs/tree/ef0ddc3cd0b6cf9b0721b8b83e97bb562e626a37) | `ef0ddc3` | 新手流程、按场景组织、FAQ 与教学话术 |
 
+GsCore 体系（第 9 节，均为 gsuid_core 插件，非 AstrBot 原生）：
+
+| 来源 | 本次参考提交 | 核对重点 |
+|---|---|---|
+| [GenshinUID](https://github.com/KimigaiiWuyi/GenshinUID/tree/35f73c7a625aaac950d8bd0a19f9704da0baba65) | `35f73c7` | 前缀、命令注册、pm 权限、私聊限定 |
+| [StarRailUID](https://github.com/baiqwerdvd/StarRailUID/tree/8286ec8b419629e739a4994a256e77efeac0ae06) | `8286ec8` | 前缀、面板数据源、抽卡导入 |
+| [ZZZeroUID](https://github.com/ZZZure/ZZZeroUID/tree/05ddeac44a1deb79faac14727d5e439911fdf4c4) | `05ddeac` | 多前缀、面板双源、抽卡 CK |
+| [BBBUID](https://github.com/KimigaiiWuyi/BBBUID/tree/aa6212db8a9edd336b3254a578e41eb2ff36501c) | `aa6212d` | 前缀、乐土攻略、扫码登陆未注册 |
+| [WzryUID](https://github.com/KimigaiiWuyi/WzryUID/tree/6bfaa1c2bd00d9e3b280b9b6612c18ae9b79b1ea) | `6bfaa1c` | 无前缀注册、CK 风险、私聊限定 |
+| [NTEUID](https://github.com/tyql688/NTEUID/tree/ba7790e13e39f9a825090853498848b51a06c3c9) | `ba7790e` | 多前缀 nte/yh、Web 登录依赖 |
+| [EndUID](https://github.com/Loping151/EndUID/tree/7b37bc4b533eb791624a587359ca70c9365621b2) | `7b37bc4` | 扫码登录、RemoteRender 依赖、绑定未实现 |
+| [PGRUID](https://github.com/Loping151/PGRUID/tree/8cdd087522e9ac54f8d8088b57339216e373d93d) | `8cdd087` | 对 XutheringWavesUID 的硬依赖 |
+| [DNAUID](https://github.com/tyql688/DNAUID/tree/182e7a0be1ae871c0ff18125fa15d6bd7997bad4) | `182e7a0` | 双登录方式差异、pycryptodome 依赖 |
+| [DeltaUID](https://github.com/Agnes4m/DeltaUID/tree/8dac6185d1cc3be635c1ccff8b569e741408f53e) | `8dac618` | 扫码 token 失效、导出仅私聊 |
+| [XutheringWavesUID](https://github.com/Loping151/XutheringWavesUID/tree/d6c0eaaf025b64757968302099c0bb82826de667) | `d6c0eaa` | ww 前缀、生态核心地位、排行 token |
+| [RoverSign](https://github.com/Loping151/RoverSign/tree/7a4d8a970d460d44234d3815a66abbf5911debfa) | `7a4d8a9` | 对主插件数据库的硬依赖 |
+| [RoverReminder](https://github.com/Loping151/RoverReminder/tree/05c100179ee33feae54779fea44a131535addb31) | `05c1001` | 邮箱必填、阈值 120–240 |
+| [ScoreEcho](https://github.com/Loping151/ScoreEcho/tree/611addb18f0d2dabc9d9058e9b9adf7c81bbae84) | `611addb` | OCR 服务 token、软依赖主插件 |
+| [WavesGachaSim](https://github.com/wei-la-ya/WavesGachaSim/tree/c911601636fc89d77c66209326dd52ad53a20d37) | `c911601` | 每日上限、百连默认关闭、统计命令未注册 |
+| [WWBetaDiff](https://github.com/MimoKit/WWBetaDiff/tree/bb7ff148de46055195e1e2cdf8ad2b8238dea6e3) | `bb7ff14` | 三快照要求、数据源 |
+| [BlueArchiveUID](https://github.com/KimigaiiWuyi/BlueArchiveUID/tree/aa3f12c39e7c3fbe1d0068d2b047031c0a05e136) | `aa3f12c` | 好友码绑定格式、Token 申请 |
+| [RocomUID](https://github.com/jiluoQAQ/RocomUID/tree/0da91685246c133d87f2b9a4112be0f65294ebe3) | `0da9168` | wegame key 依赖、定时推送 |
+| [JRYS](https://github.com/xxuanzQAQ/JRYS/tree/74b4bc66b0baed282fd10054856e91bba4a13e5e) | `74b4bc6` | 无前缀、每日次数限制、离线运行 |
+| [TodayWaifu](https://github.com/MimoKit/TodayWaifu/tree/1e4c954b4f6b089f16d0833136d82da3cb9eb118) | `1e4c954` | 无前缀、变体默认关闭、白名单 |
+| [ChisaEating](https://github.com/MimoKit/ChisaEating/tree/2048ce050d04073a11845e1e31e1c95ed3994b32) | `2048ce0` | 关键词触发、WebUI 默认密码 |
+| [gs_kuro_cos](https://github.com/nnlmc/gs_kuro_cos/tree/5f6f7e4e1f8fe2ae3a74beeb897e301caaf1f6a6) | `5f6f7e4` | 无前缀、风控警告、跳过禁搬运 |
+| [VideoResolver](https://github.com/bvzrays/VideoResolver/tree/c279d911c07821d083a3c6c62ec7595e4ed68f34) | `c279d91` | 链接自动触发、yt-dlp/Node 依赖、平台 Cookie |
+| [DailyAnalyisis](https://github.com/bvzrays/DailyAnalyisis/tree/9e067797595a8a9b5c32e316fedc824d06af7d89) | `9e06779` | LLM 依赖、消息归档隐私、群聊限定 |
+| [MomoTune](https://github.com/MimoKit/MomoTune/tree/836ba4419cf2823a628ab65ba7c7c17cc97ab046) | `836ba44` | 双源点歌、自建 API、酷狗禁用 |
+| [RemoteRender](https://github.com/Loping151/RemoteRender/tree/2a5b4222f392a0a2f8514be8a92f9e84bfa02d4a) | `2a5b422` | 独立 Node 服务、无鉴权、Linux 限定 |
+
+> 链接勘误：用户提供的 StarRailUID 原链接（qwerdvd）不存在，实际仓库为 `baiqwerdvd/StarRailUID`；MomoTune 原链接（Xinzhus）不存在，实际仓库为 `MimoKit/MomoTune`。
+
 ### 本版明确保留的限制
 
 - 未在实际 QQ 机器人中逐条运行；不保证协议端接口兼容。
@@ -830,6 +1361,10 @@ llm_view_group_file
 - QQ 资料头像缓存下载存在协议降级问题。
 - 关系管理的主动加好友/加群仅有占位实现，命令静默无操作。
 - 群导出存在部分失败、上传反馈不足和文件名计数误导的可能。
+- GsCore 体系 26 个插件仅完成源码级整理，未在 GsCore 实例运行验证；各插件的第三方 API（米游社、库街区、什亭之匣、王者营地等）可用性与风控未测试。
+- 鸣潮前缀存在 `ww`（本批插件源码）与 `fb`（GS 知识库）两种口径，未在菲比实际部署确认哪个生效。
+- BBBUID 的扫码登陆、WavesGachaSim 的抽卡统计、EndUID 的绑定命令在源码中未注册或未实现，不要作为可用功能教学。
+- DailyAnalyisis 会归档群消息、WzryUID 需要小号 CK、gs_kuro_cos 有搬运风控——这三个插件有部署层面的隐私/安全注意事项。
 
 ---
 
