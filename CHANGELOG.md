@@ -1,5 +1,20 @@
 # 更新记录
 
+## bot-0.0.4 — 2026-09-18
+
+### 前缀修订（按部署实际配置）
+
+- 依据用户提供的部署前缀配置，重写第 9 节前缀速查表，全部改为部署实际生效前缀，并标注与源码默认的差异（自定义/关闭强制/代码默认）。
+- **鸣潮生态统一 `fb`**：XutheringWavesUID、RoverSign、RoverReminder、ScoreEcho、WavesGachaSim、WWBetaDiff、TodayEcho、XWUIDCollection、gs_kuro_cos 的源码默认 `ww` 已在部署关闭；全部命令示例从 `ww` 改为 `fb`（`fb帮助`、`fb签到`、`fbng` 等），与 GS 知识库口径一致。
+- 其他前缀更新：GenshinUID 加 `ys`；StarRailUID 加 `bt`/`xqtd`/`星穹铁道`；BBBUID 加 `b3`；EndUID 加 `END`；DNAUID 加 `eclx` 系/`二重螺旋`；DeltaUID 加 `三角洲`/`sjz`；BlueArchiveUID 加 `blda`/`bl`；RocomUID 改为 `lk`/`rc`/`洛克王国`；WzryUID 前缀 `王者荣耀`；gs_kuro_cos 改为 `fb` 系。
+- 说明“菲比”双通道：鸣潮系插件接受“菲比”作游戏前缀（`菲比签到`），与 AstrBot 的“菲比”唤醒前缀（`菲比helps`）互不冲突。
+- 同步更新：需求入口表、快速判断（游戏类）、FAQ Q11/Q12/Q13、第 0 节前缀规则、第 13 节限制说明。
+
+### 新增条目（部署存在但未提供仓库）
+
+- TodayEcho（鸣潮梭哈）：命令整理自 GS 知识库（`fb梭哈`/`fb梭哈结果`/`fb梭哈列表`）。
+- XWUIDCollection（鸣潮收藏）、ChatRank（群聊排行）、DeerSignCalendar（签到日历，`🦌`/`鹿`/`补签` 触发）：仅收录前缀，命令细节待提供仓库后补充。
+
 ## bot-0.0.3 — 2026-09-17
 
 ### 新增：GsCore 游戏与娱乐插件（26 个）
